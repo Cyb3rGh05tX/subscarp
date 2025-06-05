@@ -46,8 +46,3 @@ example.com.txt
 
 Feel free to fork this repository, make improvements, and submit a Pull Request!
 
-## 📄 License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-```
