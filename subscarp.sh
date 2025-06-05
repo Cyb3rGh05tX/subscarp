@@ -149,7 +149,7 @@ scan_domain() {
 }
 
 # ⚙️ Configuration
-WORDLIST="/path/to/wordlist.txt"
+WORDLIST="/usr/share/wordlists/rockyou.txt"
 THREADS=50
 output_dir="subscan_results_$(date +"%Y%m%d")"
 
