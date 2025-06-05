@@ -8,7 +8,7 @@
 - ✅ Collects subdomains using multiple tools
 - ✅ Merges and deduplicates results into a single file
 - ✅ Fully automated and easy to use
-
+````
 ## 📦 Installation
 
 ```bash
