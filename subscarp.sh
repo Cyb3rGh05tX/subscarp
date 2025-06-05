@@ -134,11 +134,11 @@ scan_domain() {
     assetfinder --subs-only "$domain" 2>/dev/null > assetfinder.txt
 
     # 2️⃣ Active Enumeration
-    echo -e "${CYAN}[→] Running active tools...${NC}"
-    if [[ -f "$WORDLIST" ]]; then
+    if [[ "$perform_bruteforce" == "yes" ]]; then
+        echo -e "${CYAN}[→] Running active tools with wordlist: ${YELLOW}$WORDLIST${NC}"
         dnsx -d "$domain" -w "$WORDLIST" -silent -o brute.txt -t "$THREADS" 2>/dev/null
     else
-        echo -e "${RED}  [!] Wordlist not found at: $WORDLIST${NC}"
+        echo -e "${YELLOW}[→] Skipping bruteforce (no wordlist provided)${NC}"
     fi
 
     # 3️⃣ Process Results
@@ -149,7 +149,6 @@ scan_domain() {
 }
 
 # ⚙️ Configuration
-WORDLIST="/usr/share/wordlists/rockyou.txt"
 THREADS=50
 output_dir="subscan_results_$(date +"%Y%m%d")"
 
@@ -184,6 +183,31 @@ if [[ -z "$domain" && -z "$domain_list" ]]; then
     echo -e "${RED}[!] No target specified!${NC}"
     show_help
     exit 1
+fi
+
+# Ask user if they want to perform bruteforce
+echo -e "${CYAN}[?] Do you want to perform bruteforce scanning? (yes/no)${NC}"
+read -r perform_bruteforce
+
+if [[ "$perform_bruteforce" == "yes" ]]; then
+    echo -e "${CYAN}[?] Enter path to your wordlist (or press Enter to use default):${NC}"
+    read -r custom_wordlist
+    
+    if [[ -n "$custom_wordlist" && -f "$custom_wordlist" ]]; then
+        WORDLIST="$custom_wordlist"
+    elif [[ -n "$custom_wordlist" && ! -f "$custom_wordlist" ]]; then
+        echo -e "${RED}[!] Wordlist not found at: $custom_wordlist${NC}"
+        echo -e "${YELLOW}[→] Continuing without bruteforce${NC}"
+        perform_bruteforce="no"
+    else
+        # Try default wordlist
+        WORDLIST="/usr/share/wordlists/rockyou.txt"
+        if [[ ! -f "$WORDLIST" ]]; then
+            echo -e "${RED}[!] Default wordlist not found at: $WORDLIST${NC}"
+            echo -e "${YELLOW}[→] Continuing without bruteforce${NC}"
+            perform_bruteforce="no"
+        fi
+    fi
 fi
 
 # Start scan
