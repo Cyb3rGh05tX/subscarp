@@ -2,7 +2,7 @@
 
 # 🛠️ Tool Metadata
 TOOL_NAME="SubScarP"
-VERSION="1.0"
+VERSION="1.4"
 AUTHOR="CyberGh05tX"
 REPO_URL="https://github.com/Cyb3rGh05tX/subscarp"
 
@@ -134,11 +134,11 @@ scan_domain() {
     assetfinder --subs-only "$domain" 2>/dev/null > assetfinder.txt
 
     # 2️⃣ Active Enumeration
-    if [[ "$perform_bruteforce" == "yes" ]]; then
-        echo -e "${CYAN}[→] Running active tools with wordlist: ${YELLOW}$WORDLIST${NC}"
+    if [[ "$perform_bruteforce" == "yes" && -f "$WORDLIST" ]]; then
+        echo -e "${CYAN}[→] Running bruteforce with: ${YELLOW}$WORDLIST${NC}"
         dnsx -d "$domain" -w "$WORDLIST" -silent -o brute.txt -t "$THREADS" 2>/dev/null
     else
-        echo -e "${YELLOW}[→] Skipping bruteforce (no wordlist provided)${NC}"
+        echo -e "${YELLOW}[→] Skipping bruteforce${NC}"
     fi
 
     # 3️⃣ Process Results
@@ -146,6 +146,23 @@ scan_domain() {
     count=$(wc -l < "final-$domain.txt")
     echo -e "${GREEN}[✓] Found ${YELLOW}$count${GREEN} subdomains [Elapsed: $(show_elapsed_time)]${NC}"
     cd ..
+}
+
+# Function to handle wordlist path input with tab completion
+read_with_tab() {
+    local prompt="$1"
+    local reply
+
+    # Enable readline for tab completion
+    if [[ $- == *i* ]]; then
+        read -e -p "$prompt" reply
+    else
+        read -p "$prompt" reply
+    fi
+
+    # Expand ~ to home directory
+    reply="${reply/#\~/$HOME}"
+    echo "$reply"
 }
 
 # ⚙️ Configuration
@@ -185,29 +202,46 @@ if [[ -z "$domain" && -z "$domain_list" ]]; then
     exit 1
 fi
 
-# Ask user if they want to perform bruteforce
-echo -e "${CYAN}[?] Do you want to perform bruteforce scanning? (yes/no)${NC}"
-read -r perform_bruteforce
+# Ask about bruteforce
+perform_bruteforce="no"
+WORDLIST=""
 
-if [[ "$perform_bruteforce" == "yes" ]]; then
-    echo -e "${CYAN}[?] Enter path to your wordlist (or press Enter to use default):${NC}"
-    read -r custom_wordlist
-    
-    if [[ -n "$custom_wordlist" && -f "$custom_wordlist" ]]; then
-        WORDLIST="$custom_wordlist"
-    elif [[ -n "$custom_wordlist" && ! -f "$custom_wordlist" ]]; then
-        echo -e "${RED}[!] Wordlist not found at: $custom_wordlist${NC}"
-        echo -e "${YELLOW}[→] Continuing without bruteforce${NC}"
-        perform_bruteforce="no"
-    else
-        # Try default wordlist
-        WORDLIST="/usr/share/wordlists/rockyou.txt"
-        if [[ ! -f "$WORDLIST" ]]; then
-            echo -e "${RED}[!] Default wordlist not found at: $WORDLIST${NC}"
-            echo -e "${YELLOW}[→] Continuing without bruteforce${NC}"
-            perform_bruteforce="no"
+echo -e "${CYAN}[?] Do you want to perform bruteforce scanning? (yes/no)${NC}"
+read -p "  Your choice: " perform_bruteforce
+
+if [[ "$perform_bruteforce" =~ ^[yY]|[yY][eE][sS]$ ]]; then
+    perform_bruteforce="yes"
+    while true; do
+        echo -e "${CYAN}[?] Enter path to your wordlist (Copy wordlist path and past here):${NC}"
+        WORDLIST=$(read_with_tab "  Wordlist path: ")
+        
+        if [[ -z "$WORDLIST" ]]; then
+            # Try default wordlist if user pressed Enter
+            WORDLIST="/usr/share/wordlists/rockyou.txt"
+            if [[ -f "$WORDLIST" ]]; then
+                echo -e "${YELLOW}[→] Using default wordlist: $WORDLIST${NC}"
+                break
+            else
+                echo -e "${RED}[!] Default wordlist not found at: $WORDLIST${NC}"
+                echo -e "${YELLOW}[→] Please provide a valid path or Ctrl+C to cancel${NC}"
+                continue
+            fi
+        elif [[ -f "$WORDLIST" ]]; then
+            echo -e "${GREEN}[✓] Wordlist found: $WORDLIST${NC}"
+            break
+        else
+            echo -e "${RED}[!] Wordlist not found at: $WORDLIST${NC}"
+            echo -e "${YELLOW}[→] Please try again or Ctrl+C to cancel${NC}"
         fi
-    fi
+    done
+else
+    echo -e "${YELLOW}[→] Skipping bruteforce scanning${NC}"
+fi
+
+# Validate domain list file if provided
+if [[ -n "$domain_list" && ! -f "$domain_list" ]]; then
+    echo -e "${RED}[!] Domain list file not found: $domain_list${NC}"
+    exit 1
 fi
 
 # Start scan
@@ -222,9 +256,6 @@ elif [[ -f "$domain_list" ]]; then
         [[ -z "$domain" ]] && continue
         scan_domain "$domain"
     done < "$domain_list"
-else
-    echo -e "${RED}[!] Domain list file not found: $domain_list${NC}"
-    exit 1
 fi
 
 # Final report
