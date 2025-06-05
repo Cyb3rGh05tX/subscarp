@@ -4,7 +4,7 @@
 TOOL_NAME="SubScarP"
 VERSION="1.0"
 AUTHOR="CyberGh05tX"
-REPO_URL="https://github.com/Cyb3rGh05tx/subscarp"
+REPO_URL="https://github.com/Cyb3rGh05tX/subscarp"
 
 # 🎨 Colors
 GREEN='\033[0;32m'
